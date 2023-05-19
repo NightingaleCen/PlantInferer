@@ -1,4 +1,5 @@
 import torch
+from torchvision import transforms
 from transformers import ViTImageProcessor, ViTForImageClassification
 from PIL import Image
 
@@ -22,6 +23,19 @@ class Classifier:
             self.device
         )
 
+    def crop_and_resize(self, inputs):
+        H, W = inputs["pixel_values"].shape[-1], inputs["pixel_values"].shape[-2]
+        crop_size = min(H, W)
+        process = transforms.Compose(
+            [
+                transforms.CenterCrop(crop_size),
+                transforms.Resize(224, antialias=True),
+            ]
+        )
+        inputs["pixel_values"] = process(inputs["pixel_values"])
+
+        return inputs
+
     def infer(self, image_fp):
         """
         根据输入的图像输出得到分类置信度
@@ -35,6 +49,7 @@ class Classifier:
         id2label = self.model.config.id2label
 
         inputs = self.processor(images=img, return_tensors="pt").to(self.device)
+        inputs = self.crop_and_resize(inputs)
         output_logits = self.model(**inputs).logits
         probs = torch.softmax(output_logits, -1).cpu().detach().numpy()[0]
 
