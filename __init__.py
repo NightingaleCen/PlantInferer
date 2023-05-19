@@ -1,4 +1,4 @@
-from inferer import *
+from .inferer import *
 import sys
 
 if __name__ == "__main__":
